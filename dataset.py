@@ -7,9 +7,8 @@ from torch.utils.data import Dataset
 
 
 
-WIDTH = 200
-HEIGHT = 200
-MAX_IMGS = 841
+WIDTH = 250
+HEIGHT = 250
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -22,7 +21,8 @@ def load_data(folder_path: str) -> list:
     filenames = os.listdir(folder_path)
 
     i = 0
-    for i in ( t := tqdm(range(len(filenames))) ):
+    t = tqdm(range(len(filenames)))
+    for i in t:
         img = cv2.imread(os.path.join(folder_path, filenames[i]), cv2.IMREAD_COLOR)
         
         try:

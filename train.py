@@ -44,6 +44,7 @@ D_LR = .0004
 BETA_1 = 0.9
 BATCH_SIZE = 64
 DATASET_FOLDER = 'data'
+FROM_PRETRAINED = True
 N_OUTPUT_IMGS = BATCH_SIZE
 IMG_SIZE = WIDTH * HEIGHT * CHANNELS
 N_TRAINING_IMGS = len(os.listdir(DATASET_FOLDER))
@@ -65,13 +66,13 @@ def main():
 
     gen = G().to(device)  # Generator
     disc = D().to(device)  # Discriminator
-
     
     gen.apply(weights_init)
     disc.apply(weights_init)
 
-    gen.load('Generator.model')
-    disc.load('Discriminator.model')
+    if FROM_PRETRAINED:
+        gen.load('Generator.model')
+        disc.load('Discriminator.model')
 
     gen = gen.to(device)
     disc = disc.to(device)
@@ -94,8 +95,8 @@ def main():
     fake_ = .1
 
     loss_history = []
-
-    for i in (t := tqdm(range(EPOCHS))):
+    t = tqdm(range(EPOCHS))
+    for i in t:
         for j, img in enumerate(loader):
             # - train discriminator
             disc.zero_grad()

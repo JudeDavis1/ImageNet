@@ -26,7 +26,7 @@ def eval():
 
     print(fake.shape)
 
-    plt.imshow(make_grid(fake).permute(1, 2, 0).detach() * 255)
+    plt.imshow(make_grid(fake, normalize=True).permute(1, 2, 0).detach())
     plt.show()
 
 
