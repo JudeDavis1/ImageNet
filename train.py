@@ -96,40 +96,33 @@ def main():
     loss_history = []
 
     for i in (t := tqdm(range(EPOCHS))):
-        try:
-            for j, img in enumerate(loader):
+        for j, img in enumerate(loader):
+            # - train discriminator
+            disc.zero_grad()
 
-                # - train discriminator
-                disc.zero_grad()
+            decision: torch.Tensor = disc(img).view(-1)
+            D_loss_real = crit(decision, generate_label(decision).fill_(real_))
 
-                decision: torch.Tensor = disc(img.to(device, non_blocking=True)).view(-1)
+            fake_imgs = gen(generate_noise())
+            decision = disc(fake_imgs.detach())
+            D_loss_fake = crit(decision, generate_label(decision).fill_(fake_))
 
-                D_loss_real = crit(decision, generate_label(decision).fill_(real_).to(device, non_blocking=True))
+            D_loss: torch.Tensor = (D_loss_fake + D_loss_real)
+            D_loss.backward()
+            D_optimizer.step()
 
-                fake_imgs = gen(generate_noise())
-                decision = disc(fake_imgs.detach())
-                D_loss_fake = crit(decision, generate_label(decision).fill_(fake_))
+            # - train generator
+            gen.zero_grad()
+            decision = disc(fake_imgs)
 
-                D_loss: torch.Tensor = (D_loss_fake + D_loss_real)
-                D_loss.backward()
-                
-                D_optimizer.step()
+            G_loss = crit(decision, generate_label(decision).fill_(1))
 
-                # - train generator
-                gen.zero_grad()
-                decision = disc(fake_imgs)
-
-                G_loss = crit(decision, generate_label(decision).fill_(1))
-
-                G_loss.backward()
-                G_optimizer.step()
-                
-                t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.3f} D-Loss: {D_loss.item():.3f}')
+            G_loss.backward()
+            G_optimizer.step()
             
-            loss_history.append(G_loss.item())
-        except Exception as e:
-            print(e)
-            break
+            t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.3f} D-Loss: {D_loss.item():.3f}')
+        
+        loss_history.append(G_loss.item())
     
     plt.plot(range(EPOCHS), loss_history)
     plt.savefig('loss-history.png')

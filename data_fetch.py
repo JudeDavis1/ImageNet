@@ -119,10 +119,10 @@ class ImageScraper:
 
             if i % 10 == 0:
                 self.driver.execute_script(f'window.scrollTo(document.body.scrollHeight + {last_height}, document.body.scrollHeight + {last_height + 5});')
-                time.sleep(0.5)
+                time.sleep(1)
                 self.elements = self.driver.find_elements(By.CLASS_NAME, CLASS_TAG)
             
-            time.sleep(.01)
+            time.sleep(.1)
 
             last_height += 1
     
