@@ -42,7 +42,7 @@ D_LR = .0002
 BETA_1 = 0.5
 BATCH_SIZE = 128
 DATASET_FOLDER = 'data'
-FROM_PRETRAINED = True
+FROM_PRETRAINED = False
 N_OUTPUT_IMGS = BATCH_SIZE
 IMG_SIZE = WIDTH * HEIGHT * CHANNELS
 N_TRAINING_IMGS = len(os.listdir(DATASET_FOLDER))
@@ -105,7 +105,7 @@ def main():
 
             fake_imgs = gen(generate_noise())
             decision = disc(fake_imgs.detach())
-            D_loss_fake = crit(decision, generate_label(decision).fill_(fake_))
+            D_loss_fake = crit(decision.flatten(), generate_label(decision).fill_(fake_))
 
             D_loss: torch.Tensor = (D_loss_fake + D_loss_real)
             D_loss.backward()
@@ -115,7 +115,7 @@ def main():
             gen.zero_grad()
             decision = disc(fake_imgs)
 
-            G_loss = crit(decision, generate_label(decision).fill_(1))
+            G_loss = crit(decision.flatten(), generate_label(decision).fill_(1))
 
             G_loss.backward()
             G_optimizer.step()

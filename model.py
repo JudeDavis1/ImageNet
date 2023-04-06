@@ -12,7 +12,6 @@ CHANNELS = 3
 LATENT_SPACE_SIZE = 100
 
 
-
 class BaseModel(nn.Module):
     def save(self, path: str):
         torch.save(self.state_dict(), path)
