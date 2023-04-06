@@ -12,9 +12,11 @@ from dataset import load_data
 def eval():
     gen = G()
     gen.load('Generator.model')
+    gen.eval()
 
     disc = D()
     disc.load('Discriminator.model')
+    disc.eval()
 
     criterion = nn.BCELoss()
     real_imgs = torch.stack(get_testing_images())

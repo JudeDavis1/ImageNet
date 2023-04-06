@@ -24,9 +24,7 @@ SOFTWARE.
 
 import os
 import sys
-import cv2
 import torch
-import numpy as np
 
 from torch import nn
 from tqdm import tqdm
@@ -39,10 +37,10 @@ from dataset import GenericDataset, load_data, WIDTH, HEIGHT
 
 
 # - Constants
-G_LR = .0004
-D_LR = .0004
-BETA_1 = 0.9
-BATCH_SIZE = 64
+G_LR = .0002
+D_LR = .0002
+BETA_1 = 0.5
+BATCH_SIZE = 128
 DATASET_FOLDER = 'data'
 FROM_PRETRAINED = True
 N_OUTPUT_IMGS = BATCH_SIZE
@@ -66,20 +64,21 @@ def main():
 
     gen = G().to(device)  # Generator
     disc = D().to(device)  # Discriminator
-    
     gen.apply(weights_init)
     disc.apply(weights_init)
 
     if FROM_PRETRAINED:
         gen.load('Generator.model')
         disc.load('Discriminator.model')
+    gen.train()
+    disc.train()
 
     gen = gen.to(device)
     disc = disc.to(device)
 
     crit = nn.BCELoss()
-    G_optimizer = torch.optim.Adam(gen.parameters(), lr=G_LR, betas=(BETA_1, 0.999))
-    D_optimizer = torch.optim.Adam(disc.parameters(), lr=D_LR, betas=(BETA_1, 0.999))
+    G_optimizer = torch.optim.AdamW(gen.parameters(), lr=G_LR, betas=(BETA_1, 0.999))
+    D_optimizer = torch.optim.AdamW(disc.parameters(), lr=D_LR, betas=(BETA_1, 0.999))
     
     t_steps = len(loader)
     
@@ -87,12 +86,12 @@ def main():
     print(f'\nNumber of steps/epoch: {str(t_steps)}\n')
 
     # one-line helper functions
-    generate_label = lambda x: torch.ones(x.size()).to(device)
+    generate_label = lambda x: torch.ones(x.size(0)).to(device)
     grid_permute = lambda x: make_grid(x.detach()[-1], normalize=True).permute(1, 2, 0)
 
     # - introducing label smoothing
-    real_ = .9
-    fake_ = .1
+    real_ = 1
+    fake_ = 0
 
     loss_history = []
     t = tqdm(range(EPOCHS))
@@ -101,7 +100,7 @@ def main():
             # - train discriminator
             disc.zero_grad()
 
-            decision: torch.Tensor = disc(img).view(-1)
+            decision: torch.Tensor = disc(img.to(device)).view(-1)
             D_loss_real = crit(decision, generate_label(decision).fill_(real_))
 
             fake_imgs = gen(generate_noise())
@@ -121,7 +120,8 @@ def main():
             G_loss.backward()
             G_optimizer.step()
             
-            t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.3f} D-Loss: {D_loss.item():.3f}')
+            # t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.5f}')
+            t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.5f} D-Loss: {D_loss.item():.5f}')
         
         loss_history.append(G_loss.item())
     
@@ -132,6 +132,7 @@ def main():
     gen.save('Generator.model')
     disc.save('Discriminator.model')
     
+    gen.eval()
     image: torch.Tensor = gen(generate_noise())
     test_loss = crit(decision, generate_label(decision).fill_(1)).detach()
 

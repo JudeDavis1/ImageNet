@@ -9,7 +9,7 @@ n_featuremap_G = 64
 n_featuremap_D = 64
 
 CHANNELS = 3
-LATENT_SPACE_SIZE = 128
+LATENT_SPACE_SIZE = 100
 
 
 
@@ -27,7 +27,8 @@ class G(BaseModel):
         super().__init__()
 
         self.model = nn.Sequential(
-            *self.reg_block(LATENT_SPACE_SIZE, n_featuremap_G * 4, 1, 0),
+            *self.reg_block(LATENT_SPACE_SIZE, n_featuremap_G * 8, 1, 0),
+            *self.reg_block(n_featuremap_G * 8, n_featuremap_G * 4),
             *self.reg_block(n_featuremap_G * 4, n_featuremap_G * 2),
             *self.reg_block(n_featuremap_G * 2, n_featuremap_G),
             nn.ConvTranspose2d(n_featuremap_G, CHANNELS, stride=2, kernel_size=4, bias=False),
@@ -57,7 +58,8 @@ class D(BaseModel):
             *self.reg_block(CHANNELS, n_featuremap_D, False),
             *self.reg_block(n_featuremap_D, n_featuremap_D * 2),
             *self.reg_block(n_featuremap_D * 2, n_featuremap_D * 4),
-            nn.Conv2d(n_featuremap_D * 4, 1, kernel_size=4, stride=1, padding=0, bias=False),
+            *self.reg_block(n_featuremap_D * 4, n_featuremap_D * 8),
+            nn.Conv2d(n_featuremap_D * 8, 1, kernel_size=4, stride=1, padding=0, bias=False),
             nn.Sigmoid()
         )
     
