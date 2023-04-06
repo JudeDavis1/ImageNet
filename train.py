@@ -140,7 +140,7 @@ def main():
     
     gen.eval()
     image: torch.Tensor = gen(generate_noise())
-    test_loss = crit(decision, generate_label(decision).fill_(1)).detach()
+    test_loss = crit(decision.flatten(), generate_label(decision).fill_(1)).detach()
 
     print(f'Testing Loss: {test_loss}')
 
