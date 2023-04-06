@@ -98,7 +98,7 @@ def main():
     t = tqdm(range(EPOCHS))
 
     with (
-        torch.autocast(gen.device) if gen.device == 'cuda'
+        torch.autocast(device) if device == 'cuda'
         else contextlib.nullcontext()
     ):
         for i in t:
