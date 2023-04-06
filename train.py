@@ -25,6 +25,7 @@ SOFTWARE.
 import os
 import sys
 import torch
+import contextlib
 
 from torch import nn
 from tqdm import tqdm
@@ -95,35 +96,40 @@ def main():
 
     loss_history = []
     t = tqdm(range(EPOCHS))
-    for i in t:
-        for j, img in enumerate(loader):
-            # - train discriminator
-            disc.zero_grad()
 
-            decision: torch.Tensor = disc(img.to(device)).view(-1)
-            D_loss_real = crit(decision, generate_label(decision).fill_(real_))
+    with (
+        torch.autocast(gen.device) if gen.device == 'cuda'
+        else contextlib.nullcontext()
+    ):
+        for i in t:
+            for j, img in enumerate(loader):
+                # - train discriminator
+                disc.zero_grad()
 
-            fake_imgs = gen(generate_noise())
-            decision = disc(fake_imgs.detach())
-            D_loss_fake = crit(decision.flatten(), generate_label(decision).fill_(fake_))
+                decision: torch.Tensor = disc(img.to(device)).view(-1)
+                D_loss_real = crit(decision, generate_label(decision).fill_(real_))
 
-            D_loss: torch.Tensor = (D_loss_fake + D_loss_real)
-            D_loss.backward()
-            D_optimizer.step()
+                fake_imgs = gen(generate_noise())
+                decision = disc(fake_imgs.detach())
+                D_loss_fake = crit(decision.flatten(), generate_label(decision).fill_(fake_))
 
-            # - train generator
-            gen.zero_grad()
-            decision = disc(fake_imgs)
+                D_loss: torch.Tensor = (D_loss_fake + D_loss_real)
+                D_loss.backward()
+                D_optimizer.step()
 
-            G_loss = crit(decision.flatten(), generate_label(decision).fill_(1))
+                # - train generator
+                gen.zero_grad()
+                decision = disc(fake_imgs)
 
-            G_loss.backward()
-            G_optimizer.step()
+                G_loss = crit(decision.flatten(), generate_label(decision).fill_(1))
+
+                G_loss.backward()
+                G_optimizer.step()
+                
+                # t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.5f}')
+                t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.5f} D-Loss: {D_loss.item():.5f}')
             
-            # t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.5f}')
-            t.set_description(f'Batch: {j + 1}/{t_steps} G-Loss: {G_loss.item():.5f} D-Loss: {D_loss.item():.5f}')
-        
-        loss_history.append(G_loss.item())
+            loss_history.append(G_loss.item())
     
     plt.plot(range(EPOCHS), loss_history)
     plt.savefig('loss-history.png')
